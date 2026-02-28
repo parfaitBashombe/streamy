@@ -1,58 +1,47 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
-  engineType="library"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-
 model user {
-  id String @id @default(uuid())
-  name String
-  email String @unique
-  password String
-
-  created_at DateTime @default(now())
-
-  movies movie[] @relation("movieCreator")
+  id              String           @id @default(uuid())
+  name            String
+  email           String           @unique
+  password        String
+  created_at      DateTime         @default(now())
+  movies          movie[]          @relation("movieCreator")
   watchlist_items watchlist_item[]
 }
 
 model movie {
-  id String @id @default(uuid())
-  title String
-  overview String?
-  release_year Int
-  genres String[] @default([])
-  runtime Int?
-  poster_url String?
-  created_by String
-  created_at DateTime @default(now())
-
-  creator user @relation("movieCreator",fields: [created_by],references: [id],onDelete: Cascade)
+  id              String           @id @default(uuid())
+  title           String
+  overview        String?
+  release_year    Int
+  genres          String[]         @default([])
+  runtime         Int?
+  poster_url      String?
+  created_by      String
+  created_at      DateTime         @default(now())
+  creator         user             @relation("movieCreator", fields: [created_by], references: [id], onDelete: Cascade)
   watchlist_items watchlist_item[]
 }
 
 model watchlist_item {
-  id String @id @default(uuid())
-  user_id String
-  movie_id String
-  status watchlist_status @default(PLANNED)
-  rating Int?
-  notes String?
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-
-  user user @relation(fields: [user_id],references: [id],onDelete: Cascade)
-  movie movie @relation(fields: [movie_id],references: [id],onDelete: Cascade)
+  id         String           @id @default(uuid())
+  user_id    String
+  movie_id   String
+  status     watchlist_status @default(PLANNED)
+  rating     Int?
+  notes      String?
+  created_at DateTime         @default(now())
+  updated_at DateTime         @default(now())
+  movie      movie            @relation(fields: [movie_id], references: [id], onDelete: Cascade)
+  user       user             @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 enum watchlist_status {
