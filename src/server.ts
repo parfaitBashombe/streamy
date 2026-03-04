@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/movies", movieRoutes);
 app.use("/auth", authRoutes);
-app.use("watchlist", watchlistRoutes);
+app.use("/watchlist", watchlistRoutes);
 
 const PORT = 5000;
 

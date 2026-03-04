@@ -3,10 +3,7 @@ import { prisma } from "../config/prisma.js";
 import type { Request, Response } from "express";
 import { generateToken } from "../utils/generate-token.js";
 
-const register = async (
-  req: Request,
-  res: Response,
-): Promise<Response | undefined> => {
+const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password } = req.body;
 
@@ -15,7 +12,8 @@ const register = async (
     });
 
     if (userExists) {
-      return res.status(400).json({ error: "Email already used" });
+      res.status(400).json({ error: "Email already used" });
+      return;
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -29,10 +27,9 @@ const register = async (
       },
     });
 
-    // Generate JWT token
     const token = generateToken(user.id, res);
 
-    return res.status(201).json({
+    res.status(201).json({
       status: "success",
       data: {
         user: {
@@ -45,14 +42,11 @@ const register = async (
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Error registering a user" });
+    res.status(500).json({ error: "Error registering a user" });
   }
 };
 
-const login = async (
-  req: Request,
-  res: Response,
-): Promise<Response | undefined> => {
+const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
@@ -61,19 +55,20 @@ const login = async (
     });
 
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
     }
 
-    // Generate JWT token
     const token = generateToken(user.id, res);
 
-    return res.status(201).json({
+    res.status(200).json({
       status: "success",
       data: {
         user: {
@@ -85,14 +80,11 @@ const login = async (
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Error signing a user" });
+    res.status(500).json({ error: "Error signing in a user" });
   }
 };
 
-const logout = async (
-  req: Request,
-  res: Response,
-): Promise<Response | undefined> => {
+const logout = async (req: Request, res: Response): Promise<void> => {
   try {
     res.cookie("jwt", "", {
       httpOnly: true,
@@ -104,7 +96,7 @@ const logout = async (
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Error signing out a user" });
+    res.status(500).json({ error: "Error signing out a user" });
   }
 };
 
