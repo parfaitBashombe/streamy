@@ -42,6 +42,7 @@ model watchlist_item {
   updated_at DateTime         @default(now())
   movie      movie            @relation(fields: [movie_id], references: [id], onDelete: Cascade)
   user       user             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  @@unique([user_id, movie_id])
 }
 
 enum watchlist_status {
