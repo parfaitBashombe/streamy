@@ -1,7 +1,9 @@
 import express from "express";
 import { config } from "dotenv";
+
 import movieRoutes from "./routes/movies.js";
 import authRoutes from "./routes/auth.js";
+import watchlistRoutes from "./routes/watchlist.js";
 
 config();
 
@@ -12,6 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/movies", movieRoutes);
 app.use("/auth", authRoutes);
+app.use("watchlist", watchlistRoutes);
 
 const PORT = 5000;
 
