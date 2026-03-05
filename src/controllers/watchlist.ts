@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
 import { prisma } from "../config/prisma.js";
-import {
-  addToWatchlistSchema,
-  watchlistBodySchema,
-  watchlistQuerySchema,
+import type {
+  AddToWatchlistBody,
+  WatchlistBody,
+  WatchlistQuery,
 } from "../schemas/watchlist.js";
 
 const addToWatchlist = async (
@@ -11,15 +11,7 @@ const addToWatchlist = async (
   res: Response,
 ): Promise<Response | undefined> => {
   try {
-    const parsed = addToWatchlistSchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ error: parsed.error.flatten().fieldErrors });
-    }
-
-    const { movieId, status, rating, notes } = parsed.data;
+    const { movieId, status, rating, notes } = req.body as AddToWatchlistBody;
 
     const movie = await prisma.movie.findUnique({
       where: { id: movieId },
@@ -85,15 +77,7 @@ const updateWatchlistItem = async (
   res: Response,
 ): Promise<Response | undefined> => {
   try {
-    const parsed = watchlistBodySchema.safeParse(req.body);
-
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ error: parsed.error.flatten().fieldErrors });
-    }
-
-    const { status, rating, notes } = parsed.data;
+    const { status, rating, notes } = req.body as WatchlistBody;
 
     const updatedItem = await prisma.watchlist_item.update({
       where: { id: req.watchlistItem.id },
@@ -116,15 +100,7 @@ const getWatchlist = async (
   res: Response,
 ): Promise<Response | undefined> => {
   try {
-    const parsed = watchlistQuerySchema.safeParse(req.query);
-
-    if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ error: parsed.error.flatten().fieldErrors });
-    }
-
-    const { status, page, limit } = parsed.data;
+    const { status, page, limit } = req.query as unknown as WatchlistQuery;
     const skip = (page - 1) * limit;
 
     const [watchlist, total] = await prisma.$transaction([
