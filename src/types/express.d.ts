@@ -1,10 +1,13 @@
-import type { watchlist_item, movie, User } from "@prisma/client";
+import type { movie, user, watchlist_item } from "@prisma/client";
 
 declare global {
   namespace Express {
     interface Request {
-      user: User;
+      user: user;
+      movie: movie;
       watchlistItem: watchlist_item & { movie: movie };
     }
   }
 }
+
+export {};

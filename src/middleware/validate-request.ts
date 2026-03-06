@@ -4,7 +4,7 @@ import type { ZodSchema } from "zod";
 type RequestField = "body" | "query" | "params";
 
 const validate =
-  (schema: ZodSchema, field: RequestField = "body") =>
+  <T>(schema: ZodSchema<T>, field: RequestField = "body") =>
   (req: Request, res: Response, next: NextFunction): void => {
     const parsed = schema.safeParse(req[field]);
 
@@ -13,7 +13,14 @@ const validate =
       return;
     }
 
-    (req as Record<RequestField, unknown>)[field] = parsed.data;
+    if (field === "query") {
+      res.locals.query = parsed.data;
+    } else if (field === "body") {
+      req.body = parsed.data;
+    } else {
+      req.params = parsed.data as Request["params"];
+    }
+
     next();
   };
 
