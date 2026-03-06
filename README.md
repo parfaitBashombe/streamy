@@ -129,7 +129,7 @@ Four models power the entire application:
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/streamy.git
+git clone https://github.com/parfaitBashombe/streamy.git
 cd streamy
 pnpm install
 ```
