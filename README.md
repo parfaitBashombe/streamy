@@ -1,68 +1,201 @@
 # Streamy
 
-Your personal movie watchlist, powered by a modern REST API.
+**A production-grade movie watchlist REST API built for developers who care about security, clean architecture, and great developer experience.**
 
-Streamy makes it effortless to track what you want to watch, what you have watched, and what you loved along the way. Register an account, build your watchlist, rate your favorites, and keep notes on every film — all through a clean, secure API.
-
----
-
-## What Streamy Does
-
-**Manage your movie journey from start to finish.**
-
-- **Sign up in seconds** — Create an account with your name, email, and a password. Streamy handles the rest, hashing your credentials and issuing a secure token so you can get started immediately.
-
-- **Build your watchlist** — Found a movie you want to see? Add it to your personal watchlist with a single request. Streamy prevents duplicates, so your list stays clean and organized.
-
-- **Track your progress** — Mark movies as Planned, Watched, Completed, or Dropped. Update your status as you go, and always know where you left off.
-
-- **Rate and review** — Give each movie a rating from 1 to 10 and attach personal notes. Whether it is a quick star rating or a detailed thought, Streamy keeps it all in one place.
-
-- **Browse with ease** — View your full watchlist with pagination and smart filtering. Want to see only your planned movies? Filter by status. Need just the first page? Set your limit. The API adapts to how you want to browse.
-
-- **Stay in control** — Every watchlist item is tied to your account. Nobody else can view, edit, or delete your entries. Your data is yours.
+Streamy gives your users the power to discover movies, build personal watchlists, track progress, rate films, and leave notes — all through a thoughtfully designed, secure API that any frontend, mobile app, or HTTP client can plug into.
 
 ---
 
-## How It Works
+## Why Streamy
 
-Streamy is a backend API — it does not include a user interface. Instead, it exposes a set of endpoints that any frontend application, mobile app, or HTTP client can talk to.
+Most watchlist APIs are toy projects. Streamy is not. It ships with enterprise-level authentication, input validation at every boundary, ownership-enforced access control, and a database schema designed for real-world use.
 
-### Accounts
+**Built to be extended.** Whether you are building a React frontend, a mobile app with React Native, or integrating with a third-party service, Streamy handles the heavy lifting on the backend so you can focus on the experience.
 
-Create an account at `/auth/register`, log in at `/auth/login`, and log out at `/auth/logout`. On registration and login, Streamy returns a JSON Web Token that authenticates all future requests. The token is also set as a secure cookie for browser-based clients.
+---
+
+## Features
+
+- **Dual JWT Authentication** — Short-lived access tokens paired with long-lived, rotatable refresh tokens. Refresh tokens are SHA-256 hashed and stored in the database. No plaintext secrets, ever.
+
+- **Secure Cookie Management** — Refresh tokens are delivered via httpOnly, secure, sameSite-strict cookies. Built for browser-based clients without sacrificing security for API consumers.
+
+- **Session Lifecycle** — Full support for register, login, token refresh, and logout. Sessions are tracked server-side with revocation and expiry, so you always know who is active.
+
+- **Movie Catalog with Ownership** — Authenticated users can create, update, and delete movies they own. Public read access lets anyone browse the catalog. Ownership middleware ensures no unauthorized mutations.
+
+- **Personal Watchlists** — Every user gets their own watchlist. Add movies, set a status (Planned, Watched, Completed, Dropped), rate on a 1-10 scale, and attach personal notes. Duplicate entries are prevented at the database level.
+
+- **Smart Filtering and Pagination** — Browse movies by title, genre, or release year. Browse watchlists by status. Both support cursor-free offset pagination with configurable page sizes up to 100.
+
+- **Zod-Powered Validation** — Every request body, query string, and route parameter is validated through Zod schemas before it reaches a controller. Invalid input gets a structured, field-level error response.
+
+- **Graceful Error Handling** — Unhandled rejections, uncaught exceptions, and SIGTERM signals are all caught and handled cleanly. The server shuts down without dropping active connections.
+
+---
+
+## Tech Stack
+
+| Layer           | Technology                                |
+| --------------- | ----------------------------------------- |
+| Runtime         | Node.js with TypeScript (ESNext modules)  |
+| Framework       | Express 5                                 |
+| ORM             | Prisma 7 with PostgreSQL driver adapter   |
+| Database        | PostgreSQL                                |
+| Validation      | Zod 4                                     |
+| Authentication  | JSON Web Tokens (jsonwebtoken) + bcryptjs |
+| Package Manager | pnpm                                      |
+| Dev Tooling     | nodemon, tsx                              |
+
+---
+
+## API Reference
+
+### Authentication
+
+| Method | Endpoint         | Auth | Description                                                                         |
+| ------ | ---------------- | ---- | ----------------------------------------------------------------------------------- |
+| `POST` | `/auth/register` | No   | Create a new account. Returns access token and sets refresh cookie.                 |
+| `POST` | `/auth/login`    | No   | Authenticate with email and password. Returns access token and sets refresh cookie. |
+| `POST` | `/auth/refresh`  | No   | Rotate both access and refresh tokens using the refresh cookie.                     |
+| `POST` | `/auth/logout`   | Yes  | Revoke the current session and clear the refresh cookie.                            |
 
 ### Movies
 
-The `/movies` endpoint provides access to the movie catalog. Movies include a title, overview, release year, genre tags, runtime, and a poster URL.
+| Method   | Endpoint      | Auth        | Description                                                                                                    |
+| -------- | ------------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/movies`     | No          | List all movies. Supports filtering by `title`, `genre`, `release_year` and pagination via `page` and `limit`. |
+| `POST`   | `/movies`     | Yes         | Add a new movie to the catalog.                                                                                |
+| `GET`    | `/movies/:id` | No          | Retrieve a single movie by ID, including creator details.                                                      |
+| `PATCH`  | `/movies/:id` | Yes + Owner | Update a movie you created. Partial updates supported.                                                         |
+| `DELETE` | `/movies/:id` | Yes + Owner | Permanently delete a movie you created.                                                                        |
 
 ### Watchlist
 
-The `/watchlist` endpoints are the core of Streamy. Once authenticated, you can:
+| Method   | Endpoint         | Auth        | Description                                                                      |
+| -------- | ---------------- | ----------- | -------------------------------------------------------------------------------- |
+| `GET`    | `/watchlist`     | Yes         | List your watchlist items. Filter by `status`, paginate with `page` and `limit`. |
+| `POST`   | `/watchlist`     | Yes         | Add a movie to your watchlist with optional status, rating, and notes.           |
+| `GET`    | `/watchlist/:id` | Yes + Owner | Retrieve a single watchlist entry.                                               |
+| `PATCH`  | `/watchlist/:id` | Yes + Owner | Update the status, rating, or notes on a watchlist entry.                        |
+| `DELETE` | `/watchlist/:id` | Yes + Owner | Remove a movie from your watchlist.                                              |
 
-- **Add** a movie to your watchlist by providing its ID, with an optional status, rating, and notes.
-- **View** your full watchlist, paginated and filterable by status.
-- **View** a single watchlist entry by its ID.
-- **Update** the status, rating, or notes on any entry you own.
-- **Remove** a movie from your watchlist when you no longer need it.
+---
 
-Every watchlist operation verifies ownership, ensuring that only you can interact with your entries.
+## Project Structure
+
+```
+streamy/
+├── prisma/
+│   ├── migrations/         Database migration history
+│   ├── schema.prisma       Data models and relations
+│   └── seed.ts             Sample movie data seeder
+├── src/
+│   ├── config/             Prisma client initialization with PG adapter
+│   ├── controllers/        Request handlers for auth, movies, and watchlist
+│   ├── middleware/          Auth guard, request validation, ownership checks
+│   ├── routes/             Express route definitions
+│   ├── schemas/            Zod validation schemas
+│   ├── types/              Express Request type augmentation
+│   ├── utils/              JWT generation, token hashing, cookie helpers
+│   └── server.ts           Application entry point and shutdown handlers
+├── prisma.config.ts        Prisma configuration
+├── tsconfig.json           TypeScript compiler options
+├── nodemon.json            Dev server file watcher config
+└── package.json            Dependencies and scripts
+```
+
+---
+
+## Database Schema
+
+Four models power the entire application:
+
+- **user** — Stores account credentials and serves as the identity anchor for all owned resources.
+- **refresh_token** — One-to-one with user. Tracks hashed tokens, expiry timestamps, and revocation state.
+- **movie** — The catalog. Each movie is owned by the user who created it. Supports genres as a string array.
+- **watchlist_item** — The junction between users and movies. Enforces a unique constraint on `(user_id, movie_id)` to prevent duplicate entries.
 
 ---
 
 ## Getting Started
 
-1. Clone the repository and install dependencies with `pnpm install`.
-2. Set up a PostgreSQL database and add its connection string to a `.env` file alongside a `JWT_SECRET` of your choice.
-3. Run database migrations with `pnpm dlx prisma migrate deploy` and generate the client with `pnpm dlx prisma generate`.
-4. Optionally seed the database with sample movies using `pnpm seed:movies`.
-5. Start the development server with `pnpm dev`. The API will be available at `http://localhost:5000`.
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL database (local or hosted)
+- pnpm installed globally (`npm install -g pnpm`)
+
+### Installation
+
+```bash
+git clone https://github.com/your-username/streamy.git
+cd streamy
+pnpm install
+```
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+DATABASE_URL=postgresql://user:password@host:5432/streamy
+JWT_ACCESS_SECRET=your-access-token-secret
+JWT_REFRESH_SECRET=your-refresh-token-secret
+ACCESS_TOKEN_EXPIRES_IN=900
+REFRESH_TOKEN_EXPIRES_IN=604800
+REFRESH_TOKEN_COOKIE_DAYS=7
+NODE_ENV=development
+```
+
+| Variable                    | Required | Default  | Description                                  |
+| --------------------------- | -------- | -------- | -------------------------------------------- |
+| `DATABASE_URL`              | Yes      | —        | PostgreSQL connection string                 |
+| `JWT_ACCESS_SECRET`         | Yes      | —        | Secret key for signing access tokens         |
+| `JWT_REFRESH_SECRET`        | Yes      | —        | Secret key for signing refresh tokens        |
+| `ACCESS_TOKEN_EXPIRES_IN`   | No       | `900`    | Access token TTL in seconds (15 minutes)     |
+| `REFRESH_TOKEN_EXPIRES_IN`  | No       | `604800` | Refresh token TTL in seconds (7 days)        |
+| `REFRESH_TOKEN_COOKIE_DAYS` | No       | `7`      | Refresh cookie max-age in days               |
+| `NODE_ENV`                  | No       | —        | Set to `production` to enable secure cookies |
+
+### Database Setup
+
+```bash
+pnpm dlx prisma migrate deploy
+pnpm dlx prisma generate
+```
+
+### Seed Sample Data (Optional)
+
+Set `CREATOR_ID` in your `.env` to the UUID of an existing user, then run:
+
+```bash
+pnpm seed:movies
+```
+
+This populates the database with 10 classic films.
+
+### Start the Server
+
+```bash
+pnpm dev
+```
+
+The API will be available at `http://localhost:5000`.
 
 ---
 
-## Available Commands
+## Available Scripts
 
-- `pnpm dev` — Start the development server with automatic reload on file changes.
-- `pnpm build` — Compile the project for production.
-- `pnpm start` — Run the production build.
-- `pnpm seed:movies` — Populate the database with a curated set of sample movies.
+| Command            | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `pnpm dev`         | Start the development server with hot reload via nodemon |
+| `pnpm build`       | Compile TypeScript to JavaScript for production          |
+| `pnpm start`       | Run the compiled production build                        |
+| `pnpm seed:movies` | Seed the database with sample movie data                 |
+
+---
+
+## License
+
+ISC
