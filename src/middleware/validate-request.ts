@@ -13,7 +13,7 @@ const validate =
       return;
     }
 
-    req[field] = parsed.data;
+    (req as Record<RequestField, unknown>)[field] = parsed.data;
     next();
   };
 
