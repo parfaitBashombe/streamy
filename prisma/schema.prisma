@@ -15,6 +15,19 @@ model user {
   created_at      DateTime         @default(now())
   movies          movie[]          @relation("movieCreator")
   watchlist_items watchlist_item[]
+  refresh_token   refresh_token?
+}
+
+model refresh_token {
+  id         String   @id @default(uuid())
+  token_hash String   @unique
+  user_id    String   @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+  revoked_at DateTime?
+  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([expires_at])
 }
 
 model movie {
@@ -42,6 +55,7 @@ model watchlist_item {
   updated_at DateTime         @default(now())
   movie      movie            @relation(fields: [movie_id], references: [id], onDelete: Cascade)
   user       user             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
   @@unique([user_id, movie_id])
 }
 
