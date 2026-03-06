@@ -26,17 +26,39 @@ export const authMiddleware = async (
       return;
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_ACCESS_SECRET!,
-    ) as AccessTokenPayload;
+    let decoded: AccessTokenPayload;
+    try {
+      decoded = jwt.verify(
+        token,
+        process.env.JWT_ACCESS_SECRET!,
+      ) as AccessTokenPayload;
+    } catch {
+      res
+        .status(401)
+        .json({ error: "Not authorized, invalid or expired token" });
+      return;
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
+      include: { refresh_token: true },
     });
 
     if (!user) {
       res.status(401).json({ error: "User no longer exists" });
+      return;
+    }
+
+    const session = user.refresh_token;
+
+    if (
+      !session ||
+      session.revoked_at !== null ||
+      session.expires_at < new Date()
+    ) {
+      res
+        .status(401)
+        .json({ error: "Session expired or logged out, please log in again" });
       return;
     }
 

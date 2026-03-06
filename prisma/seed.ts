@@ -1,6 +1,6 @@
 import { prisma } from "../src/config/prisma.js";
 
-const creatorId = "ae18e609-e349-49c7-93ad-027a0484d287";
+const creatorId = process.env.CREATOR_ID!;
 
 const movies = [
   {
